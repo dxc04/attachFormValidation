@@ -1,0 +1,114 @@
+(function($) { 
+  $.fn.validationNote = function(settings) {
+		var Note = {
+			options : {
+				container : 'validation_msg',	
+				is_error : true
+			},
+			actions : {
+				show : function(msg, element) {
+					if(typeof(element) != 'undefined') {
+						element.parent().addClass('error');
+						element.attr('title', msg);
+						element.tipsy({gravity : 'nw'});
+						element.tipsy("enable");
+
+					}
+
+					$('.success_message, .alert').remove();
+					$.iris.message('Invalid values found. Mouse over on the highlighted fields to see the error details.', 'error', 5000);
+				},
+				hide : function(element) {
+					if(typeof(element) != 'undefined') {
+						element.parent().removeClass('error');
+						element.tipsy({gravity : 'nw'});
+						element.tipsy("disable");
+					}
+					$('.success_message, .alert').remove();
+				} 	
+			}
+		};
+
+		Note.options = $.extend(Note.options, settings);
+
+		return this.each(function() {
+			var $element = $(this);
+			if(Note.options.is_error) {
+				Note.actions.show(Note.options.msg, $element);	
+			}
+			else {
+				Note.actions.hide($element);	
+			}
+		});
+	}
+})(jQuery);
+
+var Validator = {
+	options : {
+		elements_to_validate : ''	
+	},
+	actions : {
+		updateSubmitStat : function(submit) {
+			if ($('.error').length > 0) {
+				$(submit).attr('disabled', true);
+			}
+			else {
+				$(submit).attr('disabled', false);
+			}
+		},
+		validate : function(callback, submit_callback, submit) {
+			if(Validator.options.elements_to_validate != '') {
+				callback();
+				Validator.actions.updateSubmitStat(submit);
+				$(Validator.options.elements_to_validate).live('change', function() {
+					callback();
+					Validator.actions.updateSubmitStat(submit);
+				});
+			}
+
+			$(submit).bind('click', function(e) {
+				Validator.actions.submit(e, submit_callback);
+			});
+			
+
+			jQuery(document).keyup(function(e){
+				var keynum;
+
+				if(window.event) {
+					keynum = e.keyCode;
+				}
+				else if(e.which) {
+					keynum = e.which;
+				}
+
+				if(keynum == 13){
+					Validator.actions.submit(e, submit_callback);
+				}
+			});
+		},
+		submit : function(e, callback) {
+			if(typeof(callback) != 'undefined') {
+				var error_message = callback();
+			}
+			else {
+				var error_message = false;	
+			}
+
+			if ($('.error').length > 0) {
+				e.preventDefault();
+			}
+			else if(error_message) {
+				$('#validation_msg').addClass('error_message').html(error_message);
+				e.preventDefault();
+			}
+			else {
+				hideError();
+				$('#performance_band_form').submit();
+			}
+		},
+		isInteger: function(value) {
+			var isInt = /^\s*(\+|-)?\d+\s*$/;
+			return String(value).search (isInt) != -1;
+		}
+	}		
+};
